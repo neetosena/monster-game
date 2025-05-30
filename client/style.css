@@ -14,25 +14,30 @@ html {
   align-items: center;
 }
 
-.board {
+/* Select Style for the Dropdown Menu */
+#monsterSelect {
+  padding: 6px 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin-left: 10px;
+}
+
+#grid {
   display: grid;
   grid-template-columns: repeat(10, 40px);
   grid-template-rows: repeat(10, 40px);
-  gap: 2px;
-  margin-top: 1rem;
-  width: fit-content;
+  gap: 1px;
 }
 
 .cell {
   width: 40px;
   height: 40px;
-  background-color: #eee;
+  background-color: #f9f9f9;
   border: 1px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-size: 18px;
 }
 
 .cell.occupied {

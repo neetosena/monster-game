@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monster Game</title>
+    <!-- Font Awesome CDN -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -15,7 +20,18 @@
     <div id="statsInfo"></div>
 
     <h2>Game Board</h2>
-    <div id="board" class="board"></div>
+
+    <!-- Monster Selection Dropdown -->
+    <select id="monsterSelect">
+      <option value="">--Select--</option>
+      <option value="vampire">Vampire</option>
+      <option value="werewolf">Werewolf</option>
+      <option value="ghost">Ghost</option>
+    </select>
+    <button id="chooseMonsterBtn">Choose Monster</button>
+    <button id="placeBtn" disabled>Place Monster</button>
+
+    <div id="grid" class="board"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="main.js"></script>
