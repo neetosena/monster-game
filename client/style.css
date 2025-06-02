@@ -21,6 +21,7 @@ html {
   border-radius: 5px;
   border: 1px solid #ccc;
   margin-left: 10px;
+  margin-bottom: 1em;
 }
 
 #grid {
@@ -33,13 +34,30 @@ html {
 .cell {
   width: 40px;
   height: 40px;
-  background-color: #f9f9f9;
   border: 1px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+.allowed {
+  background-color: #eef;
+  cursor: pointer;
+}
+.placed {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  background-color: #ddd;
+  width: 100%;
+  height: 100%;
+}
 
-.cell.occupied {
-  background-color: #cfc;
+.icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
 }

@@ -1,132 +1,169 @@
 const socket = io();
 let playerId;
-let monsterChoices = {}; // FIXED: define globally
-
+let monsterChoices = {}; // received from server when all chosen
+let chosenMonster = null;
+let hasPlaced = false;
+let myPosition = null;
+let allFinalPositions = {}; // merge of all positions
 const gridSize = 10;
 const boardEl = document.getElementById("grid");
 
-// Assign player
+// PLAYERS COLORS
+const playerColors = {
+  1: "#f28b82", // Player 1 = red
+  2: "#fbbc04", // Player 2 = yellow
+  3: "#34a853", // Player 3 = green
+  4: "#4285f4", // Player 4 = blue
+};
+
 socket.on("playerAssigned", (id) => {
   playerId = id;
   console.log("You are Player", playerId);
+  const playerLabel = document.getElementById("player-id");
+  playerLabel.textContent = `You are Player ${playerId}`;
+  playerLabel.style.color = playerColors[playerId]; // 🎨 apply color
+
   createBoard();
 });
 
-// Game full
-socket.on("gameFull", () => {
-  alert("Game is full!");
+socket.on("selectNewMonster", () => {
+  document.getElementById("monsterSelect").disabled = false;
+  document.getElementById("monsterSelect").value = ""; // reset
+  chosenMonster = null;
+  hasPlaced = false;
 });
 
-// Monster chosen
-document.getElementById("chooseMonsterBtn").addEventListener("click", () => {
-  const monster = document.getElementById("monsterSelect").value;
-  if (!monster) return alert("Select a monster first!");
+document.getElementById("monsterSelect").addEventListener("change", (e) => {
+  const monster = e.target.value;
+  if (!monster) return;
+
+  chosenMonster = monster;
   socket.emit("monsterChosen", monster);
+  console.log("Monster selected:", monster);
+  // alert("Now click on your edge to place the monster.");
 });
 
-// Draw initial board
+socket.on("allMonstersChosen", (choices) => {
+  monsterChoices = choices;
+  console.log("All monsters chosen. Waiting for all positions...");
+});
+
+socket.on("updateScores", (scores) => {
+  displayScores(scores);
+});
+
+function displayScores(scores) {
+  const scoreEl = document.getElementById("scores");
+  scoreEl.innerHTML = "<h3>Scores</h3>";
+  for (const [playerId, score] of Object.entries(scores)) {
+    const color = playerColors[playerId] || "#ccc";
+    const p = document.createElement("p");
+    p.textContent = `Player ${playerId}: ${score}`;
+    p.style.color = color;
+    scoreEl.appendChild(p);
+  }
+}
+
+// GRID LOGIC
 function createBoard() {
   boardEl.innerHTML = "";
-  for (let row = 0; row < gridSize; row++) {
-    // const rowDiv = document.createElement("div");
-    // rowDiv.style.display = "flex";
 
+  for (let row = 0; row < gridSize; row++) {
     for (let col = 0; col < gridSize; col++) {
       const cell = document.createElement("div");
       cell.classList.add("cell");
       cell.dataset.row = row;
       cell.dataset.col = col;
-      // rowDiv.appendChild(cell);
+
+      cell.addEventListener("click", () => handleCellClick(row, col, cell));
+
       boardEl.appendChild(cell);
     }
   }
+
+  highlightAllowedCells();
 }
 
-// Render monsters
-function renderFinalMonsters(positions) {
-  createBoard(); // clear board first
+function highlightAllowedCells() {
+  const cells = document.querySelectorAll(".cell");
 
-  Object.values(positions).forEach((pos) => {
-    const { row, col, type } = pos;
-    const index = row * gridSize + col;
-    const cell = boardEl.children[index];
+  cells.forEach((cell) => {
+    const row = parseInt(cell.dataset.row);
+    const col = parseInt(cell.dataset.col);
 
-    const icon = document.createElement("i");
-    icon.className = getMonsterIconClass(type);
-    icon.style.fontSize = "20px";
-    icon.style.color =
-      type === "vampire" ? "red" : type === "werewolf" ? "brown" : "purple";
+    let isAllowed = false;
 
-    cell.appendChild(icon);
+    if (playerId === 1 && row === 0) isAllowed = true;
+    else if (playerId === 2 && col === 0) isAllowed = true;
+    else if (playerId === 3 && row === gridSize - 1) isAllowed = true;
+    else if (playerId === 4 && col === gridSize - 1) isAllowed = true;
+
+    if (isAllowed) {
+      cell.classList.add("allowed");
+    } else {
+      cell.classList.remove("allowed");
+    }
   });
 }
 
-// FontAwesome icons
-function getMonsterIconClass(monster) {
+// HANDLE PLAYER PLACEMENT
+function handleCellClick(row, col, cellEl) {
+  if (!chosenMonster) return alert("Choose a monster first!");
+  if (hasPlaced) return;
+
+  const isValid =
+    (playerId === 1 && row === 0) ||
+    (playerId === 2 && col === 0) ||
+    (playerId === 3 && row === gridSize - 1) ||
+    (playerId === 4 && col === gridSize - 1);
+
+  if (!isValid) return alert("You must place your monster on your edge.");
+
+  myPosition = { row, col, type: chosenMonster };
+
+  socket.emit("finalMonsterPositions", { [playerId]: myPosition });
+
+  hasPlaced = true;
+  alert("Position sent. Waiting for other players...");
+}
+
+// GET AND RENDER FINAL RESULTS
+socket.on("syncMonsterPositions", (positions) => {
+  allFinalPositions = positions; // No need to merge anymore
+
+  renderFinalMonsters(allFinalPositions); // Always render survivors
+});
+
+function renderFinalMonsters(positions) {
+  createBoard(); // clear board
+  const cells = document.querySelectorAll(".cell");
+
+  Object.entries(positions).forEach(([playerId, pos]) => {
+    const { row, col, type } = pos;
+    const cell = [...cells].find(
+      (c) => c.dataset.row == row && c.dataset.col == col
+    );
+
+    const icon = document.createElement("div");
+    icon.textContent = `${getMonsterIconEmoji(type)}`;
+    icon.className = "icon";
+    icon.style.backgroundColor = playerColors[playerId];
+    icon.style.color = "white";
+
+    cell.appendChild(icon);
+    cell.classList.add("placed");
+  });
+}
+
+function getMonsterIconEmoji(monster) {
   switch (monster) {
     case "vampire":
-      return "fa-solid fa-user-ninja";
+      return "🧛";
     case "werewolf":
-      return "fa-solid fa-dog";
+      return "🐺";
     case "ghost":
-      return "fa-solid fa-ghost";
+      return "👻";
     default:
       return "";
   }
 }
-
-// When all monsters are chosen
-socket.on("allMonstersChosen", (choices) => {
-  monsterChoices = choices;
-  console.log("All monsters chosen:", monsterChoices);
-
-  // Enable final placement
-  document.getElementById("placeBtn").disabled = false;
-});
-
-document.getElementById("placeBtn").addEventListener("click", () => {
-  if (Object.keys(monsterChoices).length !== 4) {
-    return alert("Wait for all players to choose their monster!");
-  }
-
-  const placed = new Set();
-  const positions = {};
-
-  Object.entries(monsterChoices).forEach(([id, monster]) => {
-    const pid = parseInt(id);
-    let row, col;
-
-    do {
-      switch (pid) {
-        case 1:
-          row = 0;
-          col = Math.floor(Math.random() * gridSize);
-          break;
-        case 2:
-          row = Math.floor(Math.random() * gridSize);
-          col = gridSize - 1;
-          break;
-        case 3:
-          row = gridSize - 1;
-          col = Math.floor(Math.random() * gridSize);
-          break;
-        case 4:
-          row = Math.floor(Math.random() * gridSize);
-          col = 0;
-          break;
-      }
-    } while (placed.has(`${row}-${col}`));
-
-    placed.add(`${row}-${col}`);
-    console.log("placed: ", placed);
-    positions[pid] = { row, col, type: monster };
-  });
-
-  socket.emit("finalMonsterPositions", positions);
-});
-
-// Receive synced positions
-socket.on("syncMonsterPositions", (positions) => {
-  console.log("Synced monster positions received", positions);
-  renderFinalMonsters(positions);
-});

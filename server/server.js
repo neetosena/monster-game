@@ -1,13 +1,11 @@
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
 const socketIO = require("socket.io");
 const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
-// const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
@@ -19,36 +17,21 @@ let totalGames = 0;
 let games = {};
 
 let players = {};
-const monsterChoices = {};
+let monsterChoices = {};
+let finalPositions = {};
+let currentRound = 1;
+let roundHistory = []; // Array to store results of each round
 
-//CREATE A NEW GAME (BASIC PLACEHOLDER LOGIC)
-const createGame = (playerID) => {
-  const gameID = `game-${Date.now()}`;
-  games[gameID] = {
-    id: gameID,
-    players: [playerID],
-    board: Array(10)
-      .fill(null)
-      .map(() => Array(10).fill(null)),
-    removed: {},
-    status: "waiting",
-  };
-  return games[gameID];
+let playerScores = {
+  1: 0,
+  2: 0,
+  3: 0,
+  4: 0,
 };
 
 //WEBSOCKET EVENTS
 io.on("connection", (socket) => {
-  console.log(`Player connected: ${socket.id}`);
-
-  //HANDLE JOIN GAME REQUEST
-  // socket.on("joinGame", () => {
-  //   const game = createGame(socket.id);
-  //   players[socket.id].currentGame = game.id;
-
-  //   socket.join(game.id);
-  //   socket.emit("gameCreated", game);
-  //   console.log(`Player ${socket.id} joined ${game.id}`);
-  // });
+  console.log(`Player connected: ${socket.id}, ${socket}`);
 
   // Assign player number (1 to 4)
   const currentPlayerCount = Object.keys(players).length;
@@ -76,11 +59,6 @@ io.on("connection", (socket) => {
       io.emit("allMonstersChosen", monsterChoices);
     }
 
-    // //SEND STATS ON REQUEST
-    // socket.on("getStats", () => {
-    //   socket.emit("stats", { totalGames, playerStats: players[socket.id] });
-    // });
-
     socket.on("placeMonster", (data) => {
       const { row, col, type } = data;
       const player = players[socket.id];
@@ -96,7 +74,56 @@ io.on("connection", (socket) => {
   });
 
   socket.on("finalMonsterPositions", (positions) => {
-    io.emit("syncMonsterPositions", positions);
+    console.log(
+      "Received finalMonsterPositions from player",
+      players[socket.id]?.id,
+      positions
+    );
+    finalPositions = { ...finalPositions, ...positions };
+
+    if (Object.keys(finalPositions).length === 4) {
+      console.log("All players submitted. Resolving...");
+
+      // Call your function that filters survivors
+      const resolvedPositions = resolveConflicts(finalPositions);
+      console.log("Resolved survivors:", resolvedPositions);
+
+      const losers = Object.keys(players).filter(
+        (socketId) => !resolvedPositions.hasOwnProperty(players[socketId].id)
+      );
+
+      losers.forEach((socketId) => {
+        io.to(socketId).emit("selectNewMonster");
+      });
+      console.log("Losers who can select a new monster:", losers);
+
+      // Save to round history
+      roundHistory.push({
+        round: currentRound,
+        survivors: resolvedPositions,
+        allPositions: finalPositions,
+      });
+
+      // Send updated board
+      io.emit("syncMonsterPositions", resolvedPositions);
+
+      // Send current round info
+      io.emit("updateRound", currentRound);
+
+      // Score survivors
+      for (const survivorId of Object.keys(resolvedPositions)) {
+        playerScores[survivorId]++;
+      }
+
+      // Send scores to all clients
+      io.emit("updateScores", playerScores);
+
+      // Prepare for next round
+
+      currentRound++;
+      monsterChoices = resolvedPositions;
+      finalPositions = {};
+    }
   });
 
   socket.on("disconnect", () => {
@@ -108,6 +135,51 @@ io.on("connection", (socket) => {
     }
   });
 });
+
+function resolveConflicts(positions) {
+  const posMap = {}; // key = "row,col", value = array of {playerId, type}
+
+  // Group positions by coordinates
+  for (const [playerId, pos] of Object.entries(positions)) {
+    const key = `${pos.row},${pos.col}`;
+    if (!posMap[key]) posMap[key] = [];
+    posMap[key].push({ playerId, type: pos.type });
+  }
+
+  const survivors = {};
+
+  for (const [key, arr] of Object.entries(posMap)) {
+    if (arr.length === 1) {
+      // No conflict
+      const { playerId } = arr[0];
+      survivors[playerId] = positions[playerId];
+    } else if (arr.length === 2) {
+      const [a, b] = arr;
+      const winner = resolveTwoMonsters(a, b);
+      if (winner) {
+        survivors[winner.playerId] = positions[winner.playerId];
+      }
+    }
+    // If 3 or 4 monsters chose same cell → all eliminated (you can customize this)
+  }
+
+  return survivors;
+}
+
+function resolveTwoMonsters(a, b) {
+  const rules = {
+    vampire: "werewolf",
+    werewolf: "ghost",
+    ghost: "vampire",
+  };
+
+  if (a.type === b.type) return null; // both removed
+
+  if (rules[a.type] === b.type) return a; // a wins
+  if (rules[b.type] === a.type) return b; // b wins
+
+  return null; // unexpected case
+}
 
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

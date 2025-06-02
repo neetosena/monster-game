@@ -13,23 +13,29 @@
   </head>
   <body>
     <h1>Monster Game</h1>
-    <button id="joinBtn">Join Game</button>
+
     <button id="statsBtn">Get Stats</button>
 
     <div id="gameInfo"></div>
     <div id="statsInfo"></div>
 
+    <div id="round-display" style="font-weight: bold; margin-bottom: 10px">
+      Round: 1 of 10
+    </div>
+    <div id="scores"></div>
+    <div id="player-id" style="font-weight: bold; margin-bottom: 10px">
+      Player ID:
+    </div>
+
     <h2>Game Board</h2>
 
     <!-- Monster Selection Dropdown -->
     <select id="monsterSelect">
-      <option value="">--Select--</option>
-      <option value="vampire">Vampire</option>
-      <option value="werewolf">Werewolf</option>
-      <option value="ghost">Ghost</option>
+      <option value="">Select your monster</option>
+      <option value="vampire">🧛 Vampire</option>
+      <option value="werewolf">🐺 Werewolf</option>
+      <option value="ghost">👻 Ghost</option>
     </select>
-    <button id="chooseMonsterBtn">Choose Monster</button>
-    <button id="placeBtn" disabled>Place Monster</button>
 
     <div id="grid" class="board"></div>
 
