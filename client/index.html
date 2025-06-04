@@ -16,11 +16,19 @@
 
     <button id="statsBtn">Get Stats</button>
 
-    <div id="gameInfo"></div>
+    <div id="game-info">
+      <div id="turn-indicator" style="font-weight: bold; margin-bottom: 10px">
+        Waiting for players...
+      </div>
+      <div id="action-instruction">
+        Select a monster type and place it on your edge
+      </div>
+    </div>
+
     <div id="statsInfo"></div>
 
-    <div id="round-display" style="font-weight: bold; margin-bottom: 10px">
-      Round: 1 of 10
+    <div id="round-number" style="font-weight: bold; margin-bottom: 10px">
+      Round 1
     </div>
     <div id="scores"></div>
     <div id="player-id" style="font-weight: bold; margin-bottom: 10px">
@@ -37,7 +45,19 @@
       <option value="ghost">👻 Ghost</option>
     </select>
 
+    <!-- Action buttons for second+ rounds -->
+    <div id="action-buttons" style="display: none">
+      <button id="moveMonsterBtn">Move Monster</button>
+      <button id="addMonsterBtn">Add New Monster</button>
+    </div>
+
     <div id="grid" class="board"></div>
+
+    <!-- Game History Section -->
+    <h2>Game History</h2>
+    <div id="game-history-container">
+      <div id="game-history"></div>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="main.js"></script>

@@ -38,19 +38,70 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
+
 .allowed {
   background-color: #eef;
   cursor: pointer;
 }
+
+.selectable {
+  cursor: pointer;
+  position: relative;
+}
+
+.selectable::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px dashed #333;
+  pointer-events: none;
+}
+
+.selected {
+  position: relative;
+}
+
+.selected::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #333;
+  pointer-events: none;
+}
+
+.move-target {
+  background-color: rgba(66, 133, 244, 0.3);
+  cursor: pointer;
+}
+
 .placed {
   display: flex;
   justify-content: center;
   align-items: center;
-  pointer-events: none;
-  background-color: #ddd;
   width: 100%;
   height: 100%;
+}
+
+.monster-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+}
+
+.monster-container.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
 }
 
 .icon {
@@ -60,4 +111,67 @@ html {
   justify-content: center;
   align-items: center;
   font-size: 2rem;
+}
+
+/* Player edge highlighting */
+.player-edge {
+  position: relative;
+}
+
+/* Game info section */
+#game-info {
+  margin-bottom: 20px;
+}
+
+#turn-indicator {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+#action-instruction {
+  margin-bottom: 10px;
+}
+
+/* Game history section */
+#game-history-container {
+  margin-top: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+#game-history {
+  font-size: 0.9em;
+}
+
+.history-entry {
+  margin-bottom: 5px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+/* Action buttons */
+#action-buttons {
+  margin: 10px 0;
+}
+
+#action-buttons button {
+  margin-right: 10px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+/* Scores display */
+#scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+#scores p {
+  margin: 0;
+  padding: 5px;
+  font-weight: bold;
 }
